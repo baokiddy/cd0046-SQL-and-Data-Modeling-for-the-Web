@@ -1,5 +1,6 @@
 <!doctype html>
 <head>
+<base href="~/" />
 <meta charset="utf-8">
 <title>{% block title %}{% endblock %}</title>
 
@@ -88,11 +89,14 @@
 
     <!-- Begin page content -->
     <main id="content" role="main" class="container">
+      <div id="error" class="hidden">
+        An error occurred, please try again.
+      </div>  
 
       {% with messages = get_flashed_messages() %}
         {% if messages %}
           {% for message in messages %}
-            <div class="alert alert-block alert-info fade in">
+            <div class="flashes alert alert-block alert-info fade in" >
               <a class="close" data-dismiss="alert">&times;</a>
               {{ message }}
             </div>
@@ -113,6 +117,141 @@
     </div>
   </div>
 
+  <script>
+
+      // Venue creation
+      if (document.getElementById('venue-form')) {
+
+        document.getElementById('venue-form').onsubmit = function (e) {
+          e.preventDefault();
+
+          fetch('/venues/create', {
+              method: 'POST',
+              body: JSON.stringify({
+                  'name': document.getElementById('name').value,
+                  'city': document.getElementById('city').value,
+                  'state': document.getElementById('state').value,
+                  'address': document.getElementById('address').value,
+                  'phone': document.getElementById('phone').value,
+                  'genres': Array.from(document.querySelectorAll('.genre')).map(elem => elem.value),
+                  'website_link': document.getElementById('website_link').value,
+                  'image_link': document.getElementById('image_link').value,
+                  'facebook_link': document.getElementById('facebook_link').value,
+                  'seeking_talent': document.getElementById('seeking_talent').value,
+                  'seeking_description': document.getElementById('seeking_description').value
+              }),
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(function (response) {
+              return response.json();
+          })
+          .then(function (jsonResponse) {
+              window.location.reload(true);
+          })
+
+        }
+      }
+
+      // Venue creation
+      // if (document.getElementById('venue-edit')) {
+
+      //   document.getElementById('venue-edit').onsubmit = function (e) {
+      //     e.preventDefault();
+
+      //     fetch('/venues/{{venue_id}}/edit', {
+      //         method: 'POST',
+      //         body: JSON.stringify({
+      //             'name': document.getElementById('name').value,
+      //             'city': document.getElementById('city').value,
+      //             'state': document.getElementById('state').value,
+      //             'address': document.getElementById('address').value,
+      //             'phone': document.getElementById('phone').value,
+      //             'genres': Array.from(document.querySelectorAll('.genre')).map(elem => elem.value),
+      //             'website_link': document.getElementById('website_link').value,
+      //             'image_link': document.getElementById('image_link').value,
+      //             'facebook_link': document.getElementById('facebook_link').value,
+      //             'seeking_talent': document.getElementById('seeking_talent').value,
+      //             'seeking_description': document.getElementById('seeking_description').value
+      //         }),
+      //         headers: {
+      //             'Content-Type': 'application/json'
+      //         }
+      //     })
+      //     .then(function (response) {
+      //         return response.json();
+      //     })
+      //     .then(function (jsonResponse) {
+      //         window.location.reload(true);
+      //     })
+
+      //   }
+      // }
+
+
+      // Artist creation
+      if (document.getElementById('artist-form')) {
+
+        document.getElementById('artist-form').onsubmit = function (e) {
+          e.preventDefault();
+
+          fetch('/artists/create', {
+              method: 'POST',
+              body: JSON.stringify({
+                  'name': document.getElementById('name').value,
+                  'city': document.getElementById('city').value,
+                  'state': document.getElementById('state').value,
+                  'phone': document.getElementById('phone').value,
+                  'genres': Array.from(document.querySelectorAll('.genre')).map(elem => elem.value),
+                  'website_link': document.getElementById('website_link').value,
+                  'image_link': document.getElementById('image_link').value,
+                  'facebook_link': document.getElementById('facebook_link').value,
+                  'seeking_venue': document.getElementById('seeking_venue').value,
+                  'seeking_description': document.getElementById('seeking_description').value
+              }),
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(function (response) {
+              return response.json();
+          })
+          .then(function (jsonResponse) {
+              window.location.reload(true);
+          })
+
+        }
+      }
+
+      // Show creation
+      if (document.getElementById('show-form')) {
+
+        document.getElementById('show-form').onsubmit = function (e) {
+          e.preventDefault();
+          
+          fetch('/shows/create', {
+              method: 'POST',
+              body: JSON.stringify({
+                  'artist_id': document.getElementById('artist_id').value,
+                  'venue_id': document.getElementById('venue_id').value,
+                  'start_time': document.getElementById('start_time').value
+              }),
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(function (response) {
+              return response.json();
+          })
+          .then(function (jsonResponse) {
+              window.location.reload(true);
+          })
+
+        }
+      }
+
+  </script>
   <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>window.jQuery || document.write('<script type="text/javascript" src="/static/js/libs/jquery-1.11.1.min.js"><\/script>')</script>
   <script type="text/javascript" src="/static/js/libs/bootstrap-3.1.1.min.js" defer></script>
