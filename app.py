@@ -16,6 +16,7 @@ from forms import *
 import sys
 from datetime import datetime
 from jinja2 import Environment
+
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -27,66 +28,10 @@ db = SQLAlchemy(app)
 
 # TODO: connect to a local postgresql database
 migrate = Migrate(app, db)
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
 
-# Creation of associated table showing connection many-to-many connection
-# between Venues and Artists
-venue_artists = db.Table('venue_artists',
-    db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True),
-    db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
-)
 
-class Venue(db.Model):
-    __tablename__ = 'Venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    website_link = db.Column(db.String(500))
-    genres = db.Column(db.ARRAY(db.String))
-    artists = db.relationship('Artist', secondary=venue_artists,
-      backref=db.backref('Venue', lazy=True))
-    seeking_talent = db.Column(db.Boolean, default=False)
-    seeking_description = db.Column(db.String(1000))
-    shows = db.relationship('Show',backref='venue',lazy=True, passive_deletes=True)
-
-class Artist(db.Model):
-    __tablename__ = 'Artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    website_link = db.Column(db.String(500))
-    seeking_venue= db.Column(db.Boolean, default=False)
-    seeking_description = db.Column(db.String(1000))
-    shows = db.relationship('Show',backref='artist',lazy=True, passive_deletes=True)
-  
-  
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-class Show(db.Model):
-    __tablename__ = 'Show'
-
-    id = db.Column(db.Integer, primary_key=True)
-    start_time = db.Column(db.DateTime(timezone=True))
-    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id', ondelete='CASCADE'), nullable=False )
-    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id', ondelete='CASCADE'), nullable=False )
-
+# Import all models
+from models import Venue, Artist, Show
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -241,17 +186,16 @@ def show_venue(venue_id):
     past_shows = []
     upcoming_shows = []
 
-    venue_shows = db.session.query(Show).with_entities(Show.artist_id, Show.start_time).filter_by(venue_id=venue.id).all()
+    # Updated query with join to the Artist table
+    venue_shows = db.session.query(Show).join(Artist).filter(Show.venue_id==venue_id).with_entities(Show.artist_id, Show.start_time, Artist.name, Artist.image_link).all()
 
     # Filter through all associated shows to group by past and upcoming
     for show in venue_shows:
       artist_show = {}
 
-      artist = db.session.query(Venue).with_entities(Artist.name, Artist.image_link).filter_by(id=show.artist_id).limit(1).all()
-
       artist_show['artist_id'] = show.artist_id
-      artist_show['artist_name'] = artist[0].name
-      artist_show['artist_image_link'] = artist[0].image_link
+      artist_show['artist_name'] = show.name
+      artist_show['artist_image_link'] = show.image_link
       artist_show['start_time'] = str(show.start_time)
 
       if dateutil.parser.parse(str(show.start_time)).timestamp() < datetime.utcnow().timestamp():
@@ -450,17 +394,16 @@ def show_artist(artist_id):
     artist_past_shows = []
     artist_upcoming_shows = []
 
-    artist_shows = db.session.query(Show).with_entities(Show.venue_id, Show.start_time).filter_by(artist_id=artist.id).all()
+    # Updated query with join to venue table for artist shows
+    artist_shows = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).with_entities(Show.venue_id, Show.start_time, Venue.name, Venue.image_link).all()
 
     # Filter through all associated shows to group by past and upcoming
     for show in artist_shows:
       venue_show = {}
 
-      venue = db.session.query(Venue).with_entities(Venue.name, Venue.image_link).filter_by(id=show.venue_id).limit(1).all()
-
       venue_show['venue_id'] = show.venue_id
-      venue_show['venue_name'] = venue[0].name
-      venue_show['venue_image_link'] = venue[0].image_link
+      venue_show['venue_name'] = show.name
+      venue_show['venue_image_link'] = show.image_link
       venue_show['start_time'] = str(show.start_time)
 
       if dateutil.parser.parse(str(show.start_time)).timestamp() < datetime.utcnow().timestamp():
