@@ -11,7 +11,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 from forms import *
 import sys
 from datetime import datetime
@@ -24,14 +24,14 @@ from jinja2 import Environment
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
+
+# Import all models
+from models import Venue, Artist, Show, db
+
+db.init_app(app)
 
 # TODO: connect to a local postgresql database
 migrate = Migrate(app, db)
-
-
-# Import all models
-from models import Venue, Artist, Show
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -225,55 +225,66 @@ def create_venue_form():
   form = VenueForm()
   return render_template('forms/new_venue.html', form=form)
 
-@app.route('/venues/create', methods=['POST'])
+@app.route('/venues/create', methods=['GET','POST'])
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
-  error = False
-  body={}
+  form = VenueForm(**request.form)
+  
+  if form.validate_on_submit():
+    error = False
+    body={}
+        
+    try: 
+        name = request.get_json()['name']
+        city = request.get_json()['city']
+        state = request.get_json()['state']
+        address = request.get_json()['address']
+        phone = request.get_json()['phone']
+        genres = request.get_json()['genres']
+        image_link = request.get_json()['image_link']
+        website_link = request.get_json()['website_link']
+        facebook_link = request.get_json()['facebook_link']
+        seeking_talent =  request.get_json()['seeking_talent']
+        seeking_description =  request.get_json()['seeking_description']
 
-  try: 
-      name = request.get_json()['name']
-      city = request.get_json()['city']
-      state = request.get_json()['state']
-      address = request.get_json()['address']
-      phone = request.get_json()['phone']
-      genres = request.get_json()['genres']
-      image_link = request.get_json()['image_link']
-      website_link = request.get_json()['website_link']
-      facebook_link = request.get_json()['facebook_link']
-      seeking_talent =  request.get_json()['seeking_talent']
-      seeking_description =  request.get_json()['seeking_description']
+        if seeking_talent == 'y':
+          seeking_talent = True
+        else:
+          seeking_talent = False
 
-      if seeking_talent == 'y':
-        seeking_talent = True
-      else:
-        seeking_talent = False
+        venue = Venue(name=name,genres=genres,address=address, city=city, state=state, phone=phone,image_link=image_link,facebook_link=facebook_link, website_link=website_link, seeking_talent=seeking_talent,seeking_description=seeking_description)
 
-      venue = Venue(name=name,genres=genres,address=address, city=city, state=state, phone=phone,image_link=image_link,facebook_link=facebook_link, website_link=website_link, seeking_talent=seeking_talent,seeking_description=seeking_description)
+        body['id'] = Venue.query.count() + 1
+        body['name'] = venue.name
+        body['city'] = venue.city
+        body['state'] = venue.state
 
-      body['id'] = Venue.query.count() + 1
-      body['name'] = venue.name
-      body['city'] = venue.city
-      body['state'] = venue.state
+        db.session.add(venue)
+        db.session.commit()
+        
+    # TODO: on unsuccessful db insert, flash an error instead.
+    except:  
+        error = True      
+        db.session.rollback()
+        print(sys.exc_info())
 
-      db.session.add(venue)
-      db.session.commit()
-      
-  # TODO: on unsuccessful db insert, flash an error instead.
-  except:  
-      error = True      
-      db.session.rollback()
-      print(sys.exc_info())
+    finally:
+        db.session.close()           
+    if  error == True:
+        flash('An error occurred. Venue ' + name + ' could not be listed.')
+        abort(500)
+    else:   
+        flash('Venue ' + name + ' was successfully listed!') 
+        return jsonify(body)
 
-  finally:
-      db.session.close()           
-  if  error == True:
-      flash('An error occurred. Venue ' + name + ' could not be listed.')
-      abort(500)
-  else:   
-      flash('Venue ' + name + ' was successfully listed!') 
-      return jsonify(body)
+  else:
+
+    for field, message in form.errors.items():
+        flash(f'Submission error on {field}: {str(message[0])}')
+
+  return jsonify(request.get_json())
+  # return render_template('forms/new_venue.html', form=form)
   
 @app.route('/venues/<venue_id>/delete', methods=['GET', 'DELETE'])
 def delete_venue(venue_id):
@@ -586,56 +597,67 @@ def create_artist_form():
   form = ArtistForm()
   return render_template('forms/new_artist.html', form=form)
 
-@app.route('/artists/create', methods=['POST'])
+@app.route('/artists/create', methods=['GET','POST'])
 def create_artist_submission():
   # called upon submitting the new artist listing form
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
-  error = False
-  body={}
+  form = VenueForm(**request.form)
+  
+  if form.validate_on_submit():
 
-  try: 
-      name = request.get_json()['name']
-      city = request.get_json()['city']
-      state = request.get_json()['state']
-      phone = request.get_json()['phone']
-      genres = request.get_json()['genres']
-      facebook_link = request.get_json()['facebook_link']
-      website_link = request.get_json()['website_link']
-      seeking_venue =  request.get_json()['seeking_venue']
-      seeking_description =  request.get_json()['seeking_description']
-      image_link = request.get_json()['image_link']
+    error = False
+    body={}
 
-      if seeking_venue == 'y':
-        seeking_venue = True
-      else:
-        seeking_venue = False
+    try: 
+        name = request.get_json()['name']
+        city = request.get_json()['city']
+        state = request.get_json()['state']
+        phone = request.get_json()['phone']
+        genres = request.get_json()['genres']
+        facebook_link = request.get_json()['facebook_link']
+        website_link = request.get_json()['website_link']
+        seeking_venue =  request.get_json()['seeking_venue']
+        seeking_description =  request.get_json()['seeking_description']
+        image_link = request.get_json()['image_link']
 
-      artist = Artist(name=name,genres=genres, city=city, state=state, phone=phone,image_link=image_link,facebook_link=facebook_link, website_link=website_link, seeking_venue=seeking_venue,seeking_description=seeking_description)
+        if seeking_venue == 'y':
+          seeking_venue = True
+        else:
+          seeking_venue = False
 
-      body['id'] = Artist.query.count() + 1
-      body['name'] = artist.name
-      body['city'] = artist.city
-      body['state'] = artist.state
+        artist = Artist(name=name,genres=genres, city=city, state=state, phone=phone,image_link=image_link,facebook_link=facebook_link, website_link=website_link, seeking_venue=seeking_venue,seeking_description=seeking_description)
 
-      db.session.add(artist)
-      db.session.commit()
+        body['id'] = Artist.query.count() + 1
+        body['name'] = artist.name
+        body['city'] = artist.city
+        body['state'] = artist.state
 
-  # TODO: on unsuccessful db insert, flash an error instead.
-  except:  
-      error = True      
-      db.session.rollback()
-      print(sys.exc_info())
+        db.session.add(artist)
+        db.session.commit()
 
-  finally:
-      db.session.close() 
+    # TODO: on unsuccessful db insert, flash an error instead.
+    except:  
+        error = True      
+        db.session.rollback()
+        print(sys.exc_info())
 
-  if  error == True:
-      flash('An error occurred. Artist ' + name + ' could not be listed.')
-      abort(500)
-  else:   
-      flash('Artist ' + name + ' was successfully listed!') 
-      return jsonify(body)
+    finally:
+        db.session.close() 
+
+    if  error == True:
+        flash('An error occurred. Artist ' + name + ' could not be listed.')
+        abort(500)
+    else:   
+        flash('Artist ' + name + ' was successfully listed!') 
+        return jsonify(body)
+
+  else:
+
+    for field, message in form.errors.items():
+        flash(f'Submission error on {field}: {str(message[0])}')
+
+  return jsonify(request.get_json())
 
 @app.route('/artists/<artist_id>/delete', methods=['GET', 'DELETE'])
 def delete_artist(artist_id):

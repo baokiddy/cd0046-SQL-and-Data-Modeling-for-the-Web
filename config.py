@@ -6,8 +6,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 # Enable debug mode.
 DEBUG = True
 
-# Connect to the database
+WTF_CSRF_ENABLED = False
 
+# Connect to the database
 
 # TODO IMPLEMENT DATABASE URL
 # Please update with your Database credentials

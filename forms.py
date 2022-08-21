@@ -1,10 +1,13 @@
 from datetime import datetime
-from flask_wtf import Form
+from flask_wtf import FlaskForm
+from flask_wtf.csrf import CSRFProtect
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField, IntegerField, ValidationError
-from wtforms.validators import DataRequired, AnyOf, URL, Length, Regexp
+from wtforms.validators import DataRequired, AnyOf, URL, Regexp, Optional
 import phonenumbers
 
-class ShowForm(Form):
+csrf = CSRFProtect()
+
+class ShowForm(FlaskForm):
     artist_id = StringField(
         'artist_id'
     )
@@ -17,7 +20,7 @@ class ShowForm(Form):
         default= datetime.today()
     )
 
-class VenueForm(Form):
+class VenueForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
@@ -83,11 +86,11 @@ class VenueForm(Form):
     address = StringField(
         'address', validators=[DataRequired()]
     )
-    phone = IntegerField(
-        'phone', validators=[Length(min=10, max=10),Regexp('[0-9]+'), DataRequired()]
+    phone = StringField(
+        'phone', validators=[Regexp('[0-9]+'), DataRequired()]
     )
     image_link = StringField(
-        'image_link', validators=[URL()]
+        'image_link', validators=[URL(), Optional()]
     )
     genres = SelectMultipleField(
         # TODO implement enum restriction
@@ -115,10 +118,10 @@ class VenueForm(Form):
         ]
     )
     facebook_link = StringField(
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[URL(), Optional()]
     )
     website_link = StringField(
-        'website_link', validators=[URL()]
+        'website_link', validators=[URL(), Optional()]
     )
 
     seeking_talent = BooleanField( 'seeking_talent' )
@@ -129,20 +132,20 @@ class VenueForm(Form):
 
     # Validation script for phone length and error messaging - found on stackoverflow
     def validate_phone(VenueForm, phone):
-        if len(field.data) > 16:
-            raise ValidationError('Invalid phone number.')
+        if len(phone.data) > 16:
+            raise ValidationError('Invalid phone number. The phone number is too long')
         try:
-            input_number = phonenumbers.parse(field.data)
+            input_number = phonenumbers.parse(phone.data)
             if not (phonenumbers.is_valid_number(input_number)):
-                raise ValidationError('Invalid phone number.')
+                raise ValidationError('Invalid phone number. The phone number can not have text.')
         except:
-            input_number = phonenumbers.parse("+1"+field.data)
+            input_number = phonenumbers.parse("+1"+phone.data)
             if not (phonenumbers.is_valid_number(input_number)):
-                raise ValidationError('Invalid phone number.')
+                raise ValidationError('Invalid phone number. The phone number needs to be from the USA.')
 
 
 
-class ArtistForm(Form):
+class ArtistForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
@@ -205,12 +208,12 @@ class ArtistForm(Form):
             ('WY', 'WY'),
         ]
     )
-    phone = IntegerField(
+    phone = StringField(
         # TODO implement validation logic for state
-        'phone', validators=[Length(min=10, max=10),Regexp('[0-9]+'), DataRequired()]
+        'phone', validators=[Regexp('[0-9]+'), DataRequired()]
     )
     image_link = StringField(
-        'image_link', validators=[URL()]
+        'image_link', validators=[URL(), Optional()]
     )
     genres = SelectMultipleField(
         'genres', validators=[DataRequired()],
@@ -238,11 +241,11 @@ class ArtistForm(Form):
      )
     facebook_link = StringField(
         # TODO implement enum restriction
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[URL(), Optional()]
      )
 
     website_link = StringField(
-        'website_link', validators=[URL()]
+        'website_link', validators=[URL(), Optional()]
      )
 
     seeking_venue = BooleanField( 'seeking_venue' )
@@ -254,14 +257,14 @@ class ArtistForm(Form):
 
     # Validation script for phone length and error messaging - found on stackoverflow
     def validate_phone(ArtistForm, phone):
-        if len(field.data) > 16:
-            raise ValidationError('Invalid phone number.')
+        if len(phone.data) > 16:
+            raise ValidationError('Invalid phone number. The phone number is too long')
         try:
-            input_number = phonenumbers.parse(field.data)
+            input_number = phonenumbers.parse(phone.data)
             if not (phonenumbers.is_valid_number(input_number)):
-                raise ValidationError('Invalid phone number.')
+                raise ValidationError('Invalid phone number. The phone number can not have text.')
         except:
-            input_number = phonenumbers.parse("+1"+field.data)
+            input_number = phonenumbers.parse("+1"+phone.data)
             if not (phonenumbers.is_valid_number(input_number)):
-                raise ValidationError('Invalid phone number.')
+                raise ValidationError('Invalid phone number. The phone number needs to be from the USA.')
 
